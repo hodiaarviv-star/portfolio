@@ -1,0 +1,57 @@
+print('--- 1. query + projection ---');
+db.properties.find(
+  { status: 'available', neighborhood: 'הדר' },
+  { title: 1, price: 1, _id: 0 }
+).forEach(doc => printjson(doc));
+
+print('--- 2. חיפוש לפי שדה מוטמע: address.street ----');
+printjson(db.properties.find(
+  { 'address.street': 'חנקין' },
+  { title: 1, address: 1, _id: 0 }
+).toArray());
+
+print('--- 3. חיפוש בתוך מערך inspections (offer >= 2,000,000) ----');
+printjson(db.properties.find(
+  { 'inspections.offer': { $gte: 2000000 } },
+  { title: 1, inspections: 1, _id: 0 }
+).limit(3).toArray());
+
+print('--- 4. sort + limit + skip: עמוד 2 של הנכסים היקרים ביותר ----');
+db.properties.find({}, { title: 1, price: 1, _id: 0 })
+  .sort({ price: -1 })
+  .skip(5)
+  .limit(5)
+  .forEach(doc => printjson(doc));
+
+print('--- 5. count ---');
+print('כמות נכסים שנמכרו (sold) - countDocuments: ' + db.properties.countDocuments({ status: 'sold' }));
+print('כמות נכסים זמינים - cursor.count(): ' + db.properties.find({ status: 'available' }).count());
+print('כמות נכסים עם 4+ חדרים בכרמל מרכזי: ' + db.properties.countDocuments({ rooms: { $gte: 4 }, neighborhood: 'כרמל מרכזי' }));
+
+print('--- 6. toArray ---');
+const cheapestThree = db.properties.find({ status: 'available' }, { title: 1, price: 1, _id: 0 })
+  .sort({ price: 1 })
+  .limit(3)
+  .toArray();
+printjson(cheapestThree);
+
+print('--- 7. forEach ---');
+db.properties.find({ tags: 'נוף לים' }, { title: 1, price: 1, tags: 1, _id: 0 })
+  .limit(5)
+  .forEach(doc => print(doc.title + ' | ₪' + doc.price + ' | תגיות: ' + doc.tags.join(', ')));
+
+print('--- 8. Referenced data: שליפת נכסים של סוכן ספציפי ----');
+const agent = db.agents.findOne({ name: 'מיכל כהן' });
+printjson(agent);
+print('נכסים של הסוכנת מיכל כהן:');
+db.properties.find({ agent_id: agent._id }, { title: 1, price: 1, status: 1, _id: 0 })
+  .sort({ price: -1 })
+  .forEach(doc => printjson(doc));
+
+print('--- 9. שילוב מלא: נכסים זמינים, 3+ חדרים, ממוינים לפי מחיר, 4 תוצאות בלבד ----');
+printjson(db.properties.find(
+  { status: 'available', rooms: { $gte: 3 } },
+  { title: 1, rooms: 1, price: 1, neighborhood: 1, _id: 0 }
+).sort({ price: 1 }).limit(4).toArray());
+
+print('=== סעיף 4 הסתיים בהצלחה ===');

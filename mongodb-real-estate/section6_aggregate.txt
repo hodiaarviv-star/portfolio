@@ -1,0 +1,32 @@
+db.properties.aggregate([
+  { $project: { title: 1, price: 1, neighborhood: 1, tags: 1, agent_id: 1, status: 1 } },
+
+  { $unwind: '$tags' },
+
+  { $match: { tags: 'נוף לים' } },
+
+  { $group: {
+      _id: '$neighborhood',
+      average_price: { $avg: '$price' },
+      total_sea_view_properties: { $sum: 1 },
+      agent_ids: { $addToSet: '$agent_id' }
+  } },
+
+  { $lookup: {
+      from: 'agents',
+      localField: 'agent_ids',
+      foreignField: '_id',
+      as: 'agents_info'
+  } },
+
+  { $sort: { average_price: -1 } },
+
+  { $match: { total_sea_view_properties: { $gte: 3 } } },
+
+  { $out: 'sea_view_neighborhood_report' }
+]);
+
+print('sea_view_neighborhood_report נוצר עם: ' + db.sea_view_neighborhood_report.countDocuments({}) + ' מסמכים');
+printjson(db.sea_view_neighborhood_report.find().toArray());
+
+print('=== סעיף 6 הסתיים בהצלחה ===');

@@ -1,0 +1,79 @@
+db.agents.drop();
+db.properties.drop();
+
+db.agents.insertMany([
+  { name: 'דניאל לוי', phone: '050-1234567', specialties: ['דירות יוקרה', 'אחוזה'], active: true },
+  { name: 'מיכל כהן', phone: '052-7654321', specialties: ['דירות להשקעה', 'הדר'], active: true },
+  { name: 'יוסי אברהם', phone: '054-9998877', specialties: ['מסחרי', 'נווה שאנן'], active: true }
+]);
+
+const agents = db.agents.find().toArray();
+
+const neighborhoods = ['הדר', 'נווה שאנן', 'כרמל מרכזי', 'אחוזה', 'בת גלים'];
+const roomsOptions = [2, 3, 4, 5];
+const tagPool = ['חניה', 'נוף לים', 'מעלית', 'מזגן', 'מחסן', 'משופצת', 'מרפסת', 'נגיש', 'פנטהאוז/יוקרה'];
+const statusCycle = ['available', 'available', 'available', 'sold', 'rented'];
+const streetPool = ['שדרות הנשיא', 'חנקין', 'יפה נוף', 'מוריה', 'הרצל'];
+
+function priceFor(rooms, neighborhoodIndex) {
+  return 1200000 + rooms * 300000 + neighborhoodIndex * 100000;
+}
+
+const properties = [];
+let propIndex = 0;
+
+for (let n = 0; n < neighborhoods.length; n++) {
+  for (let r = 0; r < roomsOptions.length; r++) {
+    for (let copy = 0; copy < 5; copy++) {
+      const rooms = roomsOptions[r];
+      const neighborhood = neighborhoods[n];
+      const agent = agents[propIndex % agents.length];
+
+      const doc = {
+        property_id_code: 'PROP-' + (1001 + propIndex),
+        title: 'דירת ' + rooms + ' חדרים ב' + neighborhood,
+        city: 'חיפה',
+        neighborhood: neighborhood,
+        price: priceFor(rooms, n),
+        rooms: rooms,
+        tags: [tagPool[propIndex % tagPool.length], tagPool[(propIndex + 3) % tagPool.length]],
+        agent_id: agent._id,
+        address: { street: streetPool[propIndex % streetPool.length], number: (propIndex % 60) + 1 },
+        inspections: [
+          { date: new Date(2026, propIndex % 12, (propIndex % 27) + 1), client: 'לקוח_' + (propIndex + 1), offer: priceFor(rooms, n) - 20000 }
+        ],
+        status: statusCycle[propIndex % statusCycle.length],
+        created_at: new Date()
+      };
+
+      if (propIndex % 5 === 0) {
+        doc.premium_features = { pool: propIndex % 10 === 0, smart_home: true };
+      }
+
+      properties.push(doc);
+      propIndex++;
+    }
+  }
+}
+
+db.properties.insertMany(properties);
+
+db.properties.insertOne({
+  property_id_code: 'PROP-SPECIAL-1',
+  title: 'פנטהאוז דופלקס מיוחד בכרמל',
+  city: 'חיפה',
+  neighborhood: 'כרמל מרכזי',
+  price: 3200000,
+  rooms: 6,
+  tags: ['נוף לים', 'פנטהאוז/יוקרה', 'מעלית', 'חניה'],
+  agent_id: agents[0]._id,
+  address: { street: 'שדרות הנשיא', number: 1 },
+  inspections: [],
+  status: 'available',
+  premium_features: { pool: true, smart_home: true, private_elevator: true },
+  created_at: new Date()
+});
+
+print('agents נוצרו: ' + db.agents.countDocuments({}));
+print('properties נוצרו: ' + db.properties.countDocuments({}));
+print('=== סעיף 2 הסתיים בהצלחה ===');

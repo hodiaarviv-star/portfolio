@@ -1,0 +1,74 @@
+print('לפני $set - עם virtual_tour_url: ' + db.properties.countDocuments({virtual_tour_url: {$exists: true}}));
+db.properties.updateMany(
+  { price: { $gt: 2200000 } },
+  { $set: { virtual_tour_url: 'https://tours.example.com/PROP-VIRTUAL-TOUR' } }
+);
+print('אחרי $set - עם virtual_tour_url: ' + db.properties.countDocuments({virtual_tour_url: {$exists: true}}));
+
+db.properties.updateMany(
+  { status: 'available' },
+  { $addToSet: { tags: 'ניתן למשא ומתן' } }
+);
+print('נכסים זמינים עם תגית "ניתן למשא ומתן": ' + db.properties.countDocuments({ status: 'available', tags: 'ניתן למשא ומתן' }));
+
+db.properties.updateMany(
+  { status: 'available' },
+  { $inc: { view_count: 1 } }
+);
+db.properties.updateMany(
+  { status: 'available', rooms: { $gte: 4 } },
+  { $inc: { view_count: 4 } }
+);
+print('נכסים עם view_count: ' + db.properties.countDocuments({ view_count: { $exists: true } }));
+
+db.properties.updateMany(
+  { status: 'sold' },
+  { $push: { inspections: { date: new Date(), client: 'לקוח_סגירה', offer: 0 } } }
+);
+print('נכסים עם יותר מביקור אחד (inspections.1 קיים): ' + db.properties.countDocuments({ 'inspections.1': { $exists: true } }));
+
+db.properties.updateMany(
+  { $expr: { $gt: [{ $size: '$tags' }, 3] } },
+  { $pop: { tags: 1 } }
+);
+
+db.properties.updateMany(
+  { price: { $lt: 1600000 } },
+  { $pull: { tags: 'מזגן' } }
+);
+print('נכסים זולים (<1.6M) עם תגית מזגן שנותרה: ' + db.properties.countDocuments({ price: { $lt: 1600000 }, tags: 'מזגן' }));
+
+db.properties.updateOne(
+  { property_id_code: 'PROP-1001' },
+  { $set: { status: 'rented', last_reviewed: new Date() } }
+);
+printjson(db.properties.findOne({ property_id_code: 'PROP-1001' }, { title: 1, status: 1, last_reviewed: 1 }));
+
+db.properties.updateMany(
+  { status: 'available' },
+  { $set: { last_reviewed: new Date() } }
+);
+print('נכסים זמינים עם last_reviewed: ' + db.properties.countDocuments({ status: 'available', last_reviewed: { $exists: true } }));
+
+db.properties.aggregate([{ $match: {} }, { $out: 'properties_archive_full' }]);
+print('properties_archive_full נוצר עם: ' + db.properties_archive_full.countDocuments({}) + ' מסמכים');
+
+db.properties.aggregate([{ $match: { status: 'sold' } }, { $out: 'properties_archive_sold' }]);
+print('properties_archive_sold נוצר עם: ' + db.properties_archive_sold.countDocuments({}) + ' מסמכים');
+
+db.properties_archive_sold.deleteMany({ price: { $lte: 1900000 } });
+print('properties_archive_sold אחרי מחיקה חלקית: ' + db.properties_archive_sold.countDocuments({}) + ' מסמכים');
+
+db.properties_archive_full.remove({ status: 'rented' });
+print('properties_archive_full אחרי remove(status: rented): ' + db.properties_archive_full.countDocuments({}) + ' מסמכים');
+
+if (db.getCollectionNames().includes('properties_sold_backup')) {
+  db.properties_sold_backup.drop();
+}
+db.properties_archive_sold.renameCollection('properties_sold_backup');
+print('אוספים כרגע: ' + db.getCollectionNames().join(', '));
+
+db.properties_archive_full.drop();
+print('האם properties_archive_full עדיין קיים? ' + db.getCollectionNames().includes('properties_archive_full'));
+
+print('=== סעיף 5 הסתיים בהצלחה ===');

@@ -1,0 +1,53 @@
+var mapNeighborhood = function () {
+  emit(this.neighborhood, { count: 1, total_value: this.price });
+};
+
+var reduceNeighborhood = function (key, values) {
+  var result = { count: 0, total_value: 0 };
+  values.forEach(function (v) {
+    result.count += v.count;
+    result.total_value += v.total_value;
+  });
+  return result;
+};
+
+db.properties.mapReduce(mapNeighborhood, reduceNeighborhood, {
+  out: 'mapreduce_neighborhood_stats',
+  query: { status: 'available' }
+});
+print('--- mapreduce_neighborhood_stats ---');
+printjson(db.mapreduce_neighborhood_stats.find().sort({ 'value.total_value': -1 }).toArray());
+
+var mapAgent = function () {
+  emit(this.agent_id, { count: 1, total: this.price });
+};
+
+var reduceAgent = function (key, values) {
+  var result = { count: 0, total: 0 };
+  values.forEach(function (v) {
+    result.count += v.count;
+    result.total += v.total;
+  });
+  return result;
+};
+
+var finalizeAgent = function (key, reducedValue) {
+  reducedValue.average_price = reducedValue.total / reducedValue.count;
+  return reducedValue;
+};
+
+db.properties.mapReduce(mapAgent, reduceAgent, {
+  out: 'mapreduce_agent_totals',
+  finalize: finalizeAgent
+});
+print('--- mapreduce_agent_totals (לפני צירוף שם סוכן) ---');
+printjson(db.mapreduce_agent_totals.find().toArray());
+
+print('--- mapreduce_agent_totals מועשר בשם הסוכן ---');
+db.mapreduce_agent_totals.find().forEach(function (doc) {
+  var agentDoc = db.agents.findOne({ _id: doc._id });
+  print((agentDoc ? agentDoc.name : 'לא ידוע') + ' | נכסים: ' + doc.value.count +
+    ' | שווי כולל: ₪' + doc.value.total + ' | מחיר ממוצע: ₪' + Math.round(doc.value.average_price));
+});
+
+print('=== סעיף 7 הסתיים בהצלחה ===');
