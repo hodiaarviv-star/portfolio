@@ -11,6 +11,7 @@ Industrial Engineering & Management graduate (Ruppin Academic Center), focused o
 | [`public-inquiries-analysis`](public-inquiries-analysis) | **Final project:** smart analysis of public inquiries for a local council – statistics, tree-based ML models, time-series forecasting of inquiry volume | Python, ML |
 | [`bi-walmart`](bi-walmart) | BI model specification document for Walmart retail management | BI, data modeling |
 | [`digital-health-survey`](digital-health-survey) | Survey research: happiness and attitudes toward digital medicine | Statistics |
+| [`project-management`](project-management) | Project plan and Gantt chart for planning and building a public garden (tasks, resources, schedule) | MS Project |
 | [`visualization-project`](visualization-project) | Dashboard design project | Data visualization |
 
 [LinkedIn](https://www.linkedin.com/in/hodaya-arviv-707721365)
